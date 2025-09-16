@@ -53,7 +53,8 @@ jobs:
           IMAGE_TAG: sha-${{ github.sha }}
         run: |
           echo "Setting image tag to $IMAGE_TAG"
-          docker run --rm -v "$PWD":/work mikefarah/yq yq -i '.image.tag = env(IMAGE_TAG)' helm/demo-12-factor-app/values.yaml
+          docker run --rm -v "$PWD":/work -w /work -e IMAGE_TAG="$IMAGE_TAG" mikefarah/yq \
+            -i '.image.tag = env(IMAGE_TAG)' helm/demo-12-factor-app/values.yaml
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add helm/demo-12-factor-app/values.yaml
