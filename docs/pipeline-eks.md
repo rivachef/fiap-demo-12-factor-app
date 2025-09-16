@@ -7,9 +7,9 @@ Este guia descreve o fluxo GitHub Actions → Docker Hub → Argo CD → EKS par
 flowchart LR
   Dev[Git push] --> GH[GitHub]
   GH -->|Actions CI build/push| DH[(Docker Hub)]
-  ACD[Argo CD (EKS)] -->|sync| EKS[(EKS cluster)]
+  ACD[Argo CD on EKS] -->|sync manifests| EKS[(EKS cluster)]
   DH -->|pull| AppPod[Pod Express]
-  User -->|HTTP| SVC[Service] --> AppPod
+  User -->|HTTP 80| NLB[(AWS NLB)] --> SVC[Service LB] --> AppPod
   EKS -->|Probes /healthz| AppPod
   AppPod -->|stdout| Logs[kubectl logs]
 ```

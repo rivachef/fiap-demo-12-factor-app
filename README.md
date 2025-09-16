@@ -6,6 +6,9 @@
 Consulte o passo a passo detalhado para executar a pipeline GitHub Actions + Argo CD + EKS em:
 - `docs/pipeline-eks.md`
 
+Para um início rápido e objetivo, veja também:
+- `docs/quickstart.md`
+
 ## Guia: 12‑Factor na prática
 Veja como cada fator se aplica a esta demo/hands‑on, com referências aos arquivos do repo:
 - `docs/12-factor-app.md`
@@ -13,12 +16,12 @@ Veja como cada fator se aplica a esta demo/hands‑on, com referências aos arqu
 ## Arquitetura (única)
 ```mermaid
 flowchart LR
-  Dev[Dev push] -->|git push| GH[GitHub]
+  Dev[Git push] --> GH[GitHub]
   GH -->|Actions CI build/push| DH[(Docker Hub)]
-  ACD[Argo CD] -->|sync| EKS[(EKS cluster)]
+  ACD[Argo CD on EKS] -->|sync manifests| EKS[(EKS cluster)]
   DH -->|pull| AppPod[Pod Express]
-  User -->|HTTP 3000| SVC[Service] --> AppPod
-  K8s -->|Probes /healthz| AppPod
+  User -->|HTTP 80| NLB[(AWS NLB)] --> SVC[Service LB] --> AppPod
+  EKS -->|Probes /healthz| AppPod
   AppPod -->|stdout| Logs[kubectl logs]
 ```
 
@@ -55,10 +58,17 @@ kubectl version --client
 ```
 
 2. Variáveis obrigatórias
+Recomendado: use um arquivo `ENV_FILE` (ex.: `env/cfn.fiapaws`) conforme `docs/quickstart.md`.
+
+Se preferir exportar no shell:
 ```bash
 export AWS_REGION=us-east-1 # ou us-west-2
-export CLUSTER_ROLE_ARN=arn:aws:iam::ACCOUNT_ID:role/LabEksClusterRole
-export NODE_ROLE_ARN=arn:aws:iam::ACCOUNT_ID:role/LabEksNodeRole
+# Opção A (comum no Learner Lab): usar LabRole para ambos os papéis
+export CLUSTER_ROLE_ARN=arn:aws:iam::ACCOUNT_ID:role/LabRole
+export NODE_ROLE_ARN=arn:aws:iam::ACCOUNT_ID:role/LabRole
+# Opção B (se sua conta possuir roles dedicadas de EKS):
+# export CLUSTER_ROLE_ARN=arn:aws:iam::ACCOUNT_ID:role/LabEksClusterRole
+# export NODE_ROLE_ARN=arn:aws:iam::ACCOUNT_ID:role/LabEksNodeRole
 ```
 
 3. (Opcional) Informar rede explicitamente
@@ -74,10 +84,11 @@ chmod +x scripts/deploy-cfn.sh scripts/destroy-cfn.sh
 scripts/deploy-cfn.sh
 ```
 
-5. Acessar a aplicação
+5. Acessar a aplicação (NLB via Service LoadBalancer)
 ```bash
-kubectl -n demo-12-factor-app port-forward svc/demo-12-factor-app 3000:80
-curl http://localhost:3000/healthz
+kubectl -n demo-12-factor-app get svc
+# aguarde EXTERNAL-IP/hostname do Service
+curl http://<EXTERNAL-HOSTNAME>/healthz
 ```
 
 6. Teardown para economizar orçamento
@@ -92,34 +103,34 @@ scripts/destroy-cfn.sh
 - `DOCKERHUB_TOKEN`: um Access Token do Docker Hub (ou senha, não recomendado)
 
 2. Ajustar chart Helm
-- Edite `helm/demo-12-factor-app/values.yaml` e troque `REPLACE_ME_YOUR_DOCKERHUB_USERNAME` pelo seu usuário.
+- Em `helm/demo-12-factor-app/values.yaml`, defina `image.repository` para o seu Docker Hub (ex.: `docker.io/<seu-usuario>/demo-12-factor-app`).
 
 3. Fluxo
 - Ao fazer push na branch `main`, a pipeline:
   - builda a imagem `docker.io/<username>/demo-12-factor-app`
-  - publica tags: `latest` (na main), `sha-<shortsha>` e de branch
-  - atualiza `helm/demo-12-factor-app/values.yaml` com a nova tag (`sha-<shortsha>`) e commita
+  - publica tags: `latest` (na main), `sha-<shortsha>`, `sha-<longsha>` e tags de branch
+  - atualiza `helm/demo-12-factor-app/values.yaml` com a nova tag longa (`sha-<longsha>`) e commita
   - Argo CD detecta a mudança e sincroniza o cluster
 
 ## 12-Factor demonstrados
 - Codebase: repositório único
 - Dependencies: declaradas em `package.json`
-- Config: variáveis de ambiente via `ConfigMap`/`Secret`
-- Backing services: `DATABASE_URL` (opcional, para adicionar banco depois)
+- Config: variáveis via `ConfigMap` (não sensível) e `Secret` opcional; por padrão não usamos Secret
+- Backing services: não usamos DB por padrão; quando necessário, adicione `DATABASE_URL` via Secret e ajuste o app
 - Build, release, run: imagem versionada + Argo CD aplica novo release
 - Processes: stateless (dados na memória por enquanto)
 - Port binding: HTTP escutando `PORT`
-- Concurrency: `replicaCount` e HPA (opcional)
+- Concurrency: `replicaCount`; HPA pode ser adicionado futuramente
 - Disposability: graceful shutdown com SIGTERM/SIGINT
 - Dev/prod parity: Docker local x EKS
 - Logs: stdout (kubectl logs)
-- Admin processes: Job de migrations (template, opcional)
+- Admin processes: sem Jobs por padrão; adicione um Job específico quando for necessário
 
 ## Extensões futuras (opcional)
-- Postgres (RDS ou Helm chart) e migrations (`migrations.enabled: true`)
-- EKS com a mesma Application (ajustando `destination.server` e ingress)
+- Postgres (RDS ou Helm chart) e migrations (adicionar Job e `Secret` com `DATABASE_URL`)
+- Exposição via ALB/Ingress (instalar AWS Load Balancer Controller) quando precisar de camada 7
 
 ## Troubleshooting
 - Se o cluster não puxa a imagem do Docker Hub, verifique `imagePullPolicy` e se o `values.yaml` está com `repository` correto.
-- Em ambientes com IAM restrito (Learner Lab), prefira `kubectl port-forward` em vez de instalar Ingress/ALB. 
+- Em ambientes com IAM restrito (Learner Lab), usamos NLB automático via Service `type: LoadBalancer`. Caso necessário, como alternativa temporária, use `kubectl port-forward`.
 - Para encerrar custos, sempre destrua o cluster com `scripts/destroy-cfn.sh` quando não estiver usando.
