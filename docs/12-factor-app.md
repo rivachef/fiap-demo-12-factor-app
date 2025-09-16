@@ -92,9 +92,3 @@ Referência oficial: https://12factor.net/
 1. Commit no GitHub → Workflow CI builda e publica a imagem no Docker Hub.
 2. CI atualiza `image.tag` em `helm/demo-12-factor-app/values.yaml` com `sha-<commit>`.
 3. Argo CD detecta alteração no repositório e sincroniza o cluster (deploy/rollback via GitOps).
-
-## Dicas para a Live
-- Demonstre alteração de configuração (ex.: `LOG_LEVEL`) apenas via `values.yaml` e GitOps.
-- Escalone réplicas com um `git commit` alterando `replicaCount`.
-- Mostre `SIGTERM` (delete pod) e como o shutdown é limpo.
-- Se quiser avançar, habilite Ingress e/ou Postgres para evidenciar Backing Services e Admin Processes.
