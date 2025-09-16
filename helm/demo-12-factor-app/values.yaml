@@ -2,7 +2,7 @@ image:
   repository: docker.io/josenetoo98/demo-12-factor-app #REPLACE_ME_YOUR_DOCKERHUB_USERNAME
   tag: "sha-84b699054972b5a0b6c77a41bac42ee49aa30ba3" # managed-by-ci
   pullPolicy: IfNotPresent
-replicaCount: 1
+replicaCount: 3
 service:
   type: LoadBalancer
   port: 80
