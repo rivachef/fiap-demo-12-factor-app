@@ -1,6 +1,6 @@
 image:
   repository: docker.io/josenetoo98/demo-12-factor-app #REPLACE_ME_YOUR_DOCKERHUB_USERNAME
-  tag: "sha-1df6a530c12c7afb313f13804334d56f32770fd7" # managed-by-ci
+  tag: "sha-fb62774c1f71283ed98d784e1c6016dfce7e3ce8" # managed-by-ci
   pullPolicy: IfNotPresent
 replicaCount: 1
 service:
