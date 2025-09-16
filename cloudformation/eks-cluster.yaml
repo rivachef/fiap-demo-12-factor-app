@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EKS Cluster (minimal) using existing VPC default subnets and security group. No IAM resources are created.
+
+Parameters:
+  ClusterName:
+    Type: String
+    Description: EKS Cluster name
+  ClusterRoleArn:
+    Type: String
+    Description: ARN of an existing IAM role for the EKS control plane (e.g., LabEksClusterRole)
+  SubnetIds:
+    Type: CommaDelimitedList
+    Description: Comma-separated list of subnet IDs in the VPC to use for the cluster
+  SecurityGroupIds:
+    Type: CommaDelimitedList
+    Description: Comma-separated list of security group IDs for the cluster networking
+  KubernetesVersion:
+    Type: String
+    Default: ""
+    Description: Optional Kubernetes version string (for example, 1.29). Leave empty to let EKS default.
+
+Conditions:
+  HasVersion: !Not [ !Equals [ !Ref KubernetesVersion, "" ] ]
+
+Resources:
+  EKSCluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: !Ref ClusterName
+      RoleArn: !Ref ClusterRoleArn
+      ResourcesVpcConfig:
+        SubnetIds: !Ref SubnetIds
+        SecurityGroupIds: !Ref SecurityGroupIds
+      Version: !If [ HasVersion, !Ref KubernetesVersion, !Ref AWS::NoValue ]
+
+Outputs:
+  ClusterName:
+    Value: !Ref EKSCluster
+    Export:
+      Name: !Sub "${AWS::StackName}-ClusterName"
+  ClusterArn:
+    Value: !GetAtt EKSCluster.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-ClusterArn"
+  ClusterEndpoint:
+    Value: !GetAtt EKSCluster.Endpoint
+    Export:
+      Name: !Sub "${AWS::StackName}-ClusterEndpoint"
+  ClusterSecurityGroupId:
+    Value: !GetAtt EKSCluster.ClusterSecurityGroupId
+    Export:
+      Name: !Sub "${AWS::StackName}-ClusterSecurityGroupId"

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: demo-12-factor-app
+description: 12-Factor demo app chart
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

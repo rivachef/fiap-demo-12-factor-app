@@ -1,0 +1,16 @@
+{
+  "name": "demo-12-factor-app",
+  "version": "0.1.0",
+  "description": "12-Factor demo app (Node.js + Express) for Kubernetes + Helm + Argo CD",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node -e \"console.log('No tests yet')\""
+  },
+  "engines": { "node": ">=20" },
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

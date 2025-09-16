@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EKS Managed Nodegroup (minimal) for an existing EKS cluster. No IAM resources are created.
+
+Parameters:
+  ClusterName:
+    Type: String
+    Description: Name of the existing EKS Cluster
+  NodegroupName:
+    Type: String
+    Default: ng-1
+    Description: Nodegroup name
+  NodeRoleArn:
+    Type: String
+    Description: ARN of an existing IAM role for EC2 nodes (node instance role)
+  SubnetIds:
+    Type: CommaDelimitedList
+    Description: Comma-separated list of subnet IDs for the nodegroup
+  InstanceTypes:
+    Type: CommaDelimitedList
+    Default: t3.micro
+    Description: Comma-separated list of instance types (e.g., t3.micro)
+  DesiredSize:
+    Type: Number
+    Default: 1
+  MinSize:
+    Type: Number
+    Default: 1
+  MaxSize:
+    Type: Number
+    Default: 1
+  DiskSize:
+    Type: Number
+    Default: 20
+    Description: Node volume size in GiB
+  CapacityType:
+    Type: String
+    Default: ON_DEMAND
+    AllowedValues: [ON_DEMAND, SPOT]
+
+Resources:
+  EKSNodegroup:
+    Type: AWS::EKS::Nodegroup
+    Properties:
+      ClusterName: !Ref ClusterName
+      NodegroupName: !Ref NodegroupName
+      NodeRole: !Ref NodeRoleArn
+      Subnets: !Ref SubnetIds
+      InstanceTypes: !Ref InstanceTypes
+      ScalingConfig:
+        DesiredSize: !Ref DesiredSize
+        MinSize: !Ref MinSize
+        MaxSize: !Ref MaxSize
+      DiskSize: !Ref DiskSize
+      CapacityType: !Ref CapacityType
+
+Outputs:
+  NodegroupName:
+    Value: !Ref EKSNodegroup
+    Export:
+      Name: !Sub "${AWS::StackName}-NodegroupName"

@@ -1,0 +1,40 @@
+image:
+  repository: docker.io/REPLACE_ME_YOUR_DOCKERHUB_USERNAME/demo-12-factor-app
+  tag: "0.1.0" # managed-by-ci
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  type: LoadBalancer
+  port: 80
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+
+env:
+  APP_NAME: demo-12-factor-app
+  LOG_LEVEL: info
+
+config:
+  EXAMPLE_CONFIG: "hello"
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+probes:
+  liveness:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  readiness:
+    path: /healthz
+    initialDelaySeconds: 2
+    periodSeconds: 5
+
+migrations:
+  enabled: false
