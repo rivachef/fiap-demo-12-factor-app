@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: demo-12-factor-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rivachef/demo-12-factor-app.git
+    targetRevision: main
+    path: helm/demo-12-factor-app
+    helm:
+      releaseName: demo-12-factor-app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: demo-12-factor-app
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
